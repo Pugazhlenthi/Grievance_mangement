@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Grievance Portal - Government of Tamil Nadu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .header-banner { border-bottom: 4px solid #0d6efd; background-color: #f8f9fa; }
+        .req-star { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="header-banner py-3 mb-4 shadow-sm">
+    <div class="container d-flex justify-content-between align-items-center">
+        <div>
+            <span class="badge bg-primary mb-1">Government of Tamil Nadu</span>
+            <h2 class="fw-bold mb-0 text-dark">Citizen Grievance Portal</h2>
+        </div>
+        <div>
+            <a href="/department.html" class="btn btn-outline-primary btn-sm me-2">Constituency Officer Login</a>
+            <a href="/admin.html" class="btn btn-outline-danger btn-sm">District Admin Login</a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-2">
+    <div class="row g-4">
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm p-4">
+                <h4 class="fw-bold text-primary mb-3"><i class="bi bi-pencil-square me-2"></i>Register Complaint</h4>
+                <form id="grievanceForm" onsubmit="submitGrievance(event)">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">District (மாவட்டம்) <span class="req-star">*</span></label>
+                            <select id="districtSelect" class="form-select" onchange="loadConstituencies()" required>
+                                <option value="">-- Select District --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Constituency (தொகுதி) <span class="req-star">*</span></label>
+                            <select id="constituencySelect" class="form-select" required>
+                                <option value="">-- Select Constituency --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Village / Area (கிராமம் / நகர்) <span class="req-star">*</span></label>
+                            <input class="form-control" id="villageInput" placeholder="Type village or area name..." required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Department Category <span class="req-star">*</span></label>
+                            <select id="categorySelect" class="form-select" required>
+                                <option value="WATER_SUPPLY">Water Supply</option>
+                                <option value="ROADS">Roads Department</option>
+                                <option value="ELECTRICITY">Electricity Board</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Street / Address Details <span class="req-star">*</span></label>
+                        <input type="text" id="locationInput" class="form-control" placeholder="e.g. Main Street near Water Tank" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Problem Description <span class="req-star">*</span></label>
+                        <textarea id="descriptionInput" class="form-control" rows="3" placeholder="Describe the issue..." required></textarea>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-md-7">
+                            <label class="form-label fw-semibold">Evidence Photo <span class="req-star">*</span></label>
+                            <input type="file" id="imageInput" class="form-control border-danger" accept="image/*" required>
+                        </div>
+                        <div class="col-md-5 mt-3 mt-md-0">
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-3" onclick="getGPSLocation()">
+                                <i class="bi bi-geo-alt-fill me-1"></i>Fetch GPS Location
+                            </button>
+                            <small id="gpsStatus" class="text-muted d-block text-center mt-1"></small>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Submit Grievance</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm p-4">
+                <h4 class="fw-bold text-secondary mb-3"><i class="bi bi-search me-2"></i>Track Status</h4>
+                <div class="input-group mb-3">
+                    <input type="text" id="trackIdInput" class="form-control" placeholder="Complaint ID (e.g. G1234)">
+                    <button class="btn btn-secondary" onclick="trackComplaint()">Track</button>
+                </div>
+                <div id="trackResult" style="display:none;" class="p-3 bg-light rounded border"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const tnData = {
+    "Ariyalur": ["Ariyalur", "Jayankondam"],
+    "Chengalpattu": ["Chengalpattu", "Thiruporur", "Cheyyur", "Madurantakam", "Tambaram", "Pallavaram", "Shohinganallur"],
+    "Chennai": ["Gummidipoondi", "Ponneri", "Tiruvottiyur", "Dr. Radhakrishnan Nagar", "Perambur", "Kolathur", "Villivakkam", "Thiru-Vi-Ka-Nagar", "Egmore", "Royapuram", "Harbour", "Chepauk-Thiruvallikeni", "Thousand Lights", "Anna Nagar", "Virugampakkam", "Saidapet", "Thiyagarayanagar", "Mylapore", "Velachery"],
+    "Coimbatore": ["Mettupalayam", "Avanashi", "Tiruppur North", "Tiruppur South", "Sulur", "Kavundampalayam", "Coimbatore North", "Thondamuthur", "Coimbatore South", "Singanallur", "Kinathukadavu", "Pollachi", "Valparai"],
+    "Cuddalore": ["Tittakudi", "Vriddhachalam", "Neyveli", "Cuddalore", "Kurinjipadi", "Buvanagiri", "Chidambaram", "Kattumannarkoil"],
+    "Dharmapuri": ["Palacode", "Pennagaram", "Dharmapuri", "Pappireddipatti", "Harur"],
+    "Dindigul": ["Palani", "Oddanchatram", "Athoor", "Nilakottai", "Natham", "Dindigul", "Vedasandur"],
+    "Erode": ["Erode East", "Erode West", "Modakkurichi", "Perundurai", "Bhavani", "Anthiyur", "Gobichettipalayam", "Bhavanisagar"],
+    "Kanchipuram": ["Kanchipuram", "Sriperumbudur", "Uthiramerur"],
+    "Kanyakumari": ["Kanniyakumari", "Nagercoil", "Colachel", "Padmanabhapuram", "Vilavancode", "Killiyoor"],
+    "Karur": ["Aravakurichi", "Karur", "Krishnarayapuram", "Kulithalai"],
+    "Krishnagiri": ["Uthangarai", "Bargur", "Krishnagiri", "Veppanahalli", "Hosur", "Thalli"],
+    "Madurai": ["Melur", "Madurai East", "Sholavandan", "Madurai North", "Madurai South", "Madurai Central", "Madurai West", "Tiruparankundram", "Tirumangalam", "Usilampatti"],
+    "Mayiladuthurai": ["Sirkali", "Mayiladuthurai", "Poompuhar"],
+    "Nagapattinam": ["Nagapattinam", "Kilvelur", "Vedaranyam"],
+    "Namakkal": ["Rasipuram", "Senthamangalam", "Namakkal", "Paramathi-Velur", "Tiruchengodu", "Kumarapalayam"],
+    "Nilgiris": ["Udhagamandalam", "Gudalur", "Coonoor"],
+    "Perambalur": ["Perambalur", "Kunnam"],
+    "Pudukkottai": ["Gandharvakottai", "Viralimalai", "Pudukkottai", "Thirumayam", "Alangudi", "Aranthangi"],
+    "Ramanathapuram": ["Paramakudi", "Tiruvadanai", "Ramanathapuram", "Mudukulathur"],
+    "Ranipet": ["Sholinghur", "Ranipet", "Arcot"],
+    "Salem": ["Mettur", "Omalur", "Edappadi", "Sankari", "Salem West", "Salem North", "Salem South", "Veerapandi", "Yercaud", "Athanavoor", "Attur", "Gangavalli"],
+    "Sivaganga": ["Karaikudi", "Tiruppattur", "Sivaganga", "Manamadurai"],
+    "Tenkasi": ["Rajapalayam", "Srivilliputhur", "Tenkasi", "Alangulam", "Kadayanallur", "Vasudevanallur"],
+    "Thanjavur": ["Thiruvaiyaru", "Thanjavur", "Orathanadu", "Pattukkottai", "Peravurani", "Tiruvidaimarudur", "Kumbakonam", "Papanasam"],
+    "Theni": ["Andipatti", "Periyakulam", "Bodinayakanur", "Cumbum"],
+    "Thoothukudi": ["Vilaathikulam", "Tiruchendur", "Srivaikuntam", "Ottapidaram", "Kovilpatti", "Thoothukkudi"],
+    "Tiruchirappalli": ["Manapparai", "Srirangam", "Tiruchirappalli West", "Tiruchirappalli East", "Tiruverumbur", "Lalgudi", "Manachanallur", "Musiri", "Thuraiyur"],
+    "Tirunelveli": ["Tirunelveli", "Ambasamudram", "Palayamkottai", "Nanguneri", "Radhapuram"],
+    "Tirupathur": ["Jolarpet", "Tirupathur", "Vaniyambadi", "Ambur"],
+    "Tiruppur": ["Dharapuram", "Kangayam", "Udumalaipettai", "Madathukulam"],
+    "Tiruvallur": ["Gudiyattam", "Tiruvallur", "Poonamallee", "Avadi", "Tiruttani"],
+    "Tiruvannamalai": ["Chengam", "Tiruvannamalai", "Kilpennathur", "Polur", "Arani", "Cheyyar", "Vandavasi"],
+    "Tiruvarur": ["Thiruthuraipoondi", "Mannargudi", "Tiruvarur", "Nannilam"],
+    "Vellore": ["Katpadi", "Vellore", "Anaikattu", "Kilvaithinankuppam"],
+    "Viluppuram": ["Gingee", "Tindivanam", "Mailam", "Vikravandi", "Villupuram", "Tirukkoyilur"],
+    "Virudhunagar": ["Satur", "Sivakasi", "Virudhunagar", "Aruppukottai", "Tiruchuli"]
+};
+
+let currentLat = null, currentLng = null;
+
+window.onload = function() {
+    const distSelect = document.getElementById('districtSelect');
+    for (let district in tnData) {
+        distSelect.innerHTML += `<option value="${district}">${district}</option>`;
+    }
+};
+
+function loadConstituencies() {
+    const district = document.getElementById('districtSelect').value;
+    const constSelect = document.getElementById('constituencySelect');
+    constSelect.innerHTML = '<option value="">-- Select Constituency --</option>';
+
+    if (district && tnData[district]) {
+        tnData[district].forEach(c => {
+            constSelect.innerHTML += `<option value="${c}">${c}</option>`;
+        });
+    }
+}
+
+function getGPSLocation() {
+    const status = document.getElementById('gpsStatus');
+    if (navigator.geolocation) {
+        status.innerText = "Fetching coordinates...";
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                currentLat = pos.coords.latitude;
+                currentLng = pos.coords.longitude;
+                status.innerText = `GPS Captured (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)})`;
+            },
+            () => { status.innerText = "Unable to fetch GPS."; }
+        );
+    }
+}
+
+async function submitGrievance(e) {
+    e.preventDefault();
+
+    const imageFile = document.getElementById('imageInput').files[0];
+    if (!imageFile) {
+        alert("Evidence photo is mandatory! Please upload a photo.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("district", document.getElementById('districtSelect').value);
+    formData.append("constituency", document.getElementById('constituencySelect').value);
+    formData.append("village", document.getElementById('villageInput').value);
+    formData.append("category", document.getElementById('categorySelect').value);
+    formData.append("location", document.getElementById('locationInput').value);
+    formData.append("description", document.getElementById('descriptionInput').value);
+    formData.append("image", imageFile);
+
+    if (currentLat && currentLng) {
+        formData.append("latitude", currentLat);
+        formData.append("longitude", currentLng);
+    }
+
+    try {
+        const res = await fetch('/api/complaints', { method: 'POST', body: formData });
+        const data = await res.json();
+        alert(`Complaint Submitted Successfully!\nID: ${data.complaintId}\nStatus: ${data.status}`);
+        document.getElementById('grievanceForm').reset();
+        document.getElementById('gpsStatus').innerText = '';
+    } catch (err) {
+        alert("Failed to submit complaint.");
+    }
+}
+
+async function trackComplaint() {
+    const id = document.getElementById('trackIdInput').value.trim();
+    if (!id) return;
+
+    try {
+        const res = await fetch(`/api/complaints/track/${id}`);
+        const c = await res.json();
+        const resultDiv = document.getElementById('trackResult');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+            <h6><strong>ID: ${c.complaintId}</strong></h6>
+            <p class="mb-1"><strong>Location:</strong> ${c.district} | ${c.constituency} | ${c.village}</p>
+            <p class="mb-1"><strong>Status:</strong> <span class="badge bg-primary">${c.status}</span></p>
+            <p class="mb-0"><strong>Severity:</strong> ${c.severityScore}/5 | <strong>Reports:</strong> ${c.reportCount}</p>
+        `;
+    } catch (err) {
+        alert("Complaint ID not found.");
+    }
+}
+</script>
+</body>
+</html>
