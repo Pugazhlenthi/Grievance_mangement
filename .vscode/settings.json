@@ -2,5 +2,6 @@
     "java.project.sourcePaths": [
         "src/main/java/com/governance/src/main/java/com/governance/model",
         "src/main/java/com/governance"
-    ]
+    ],
+    "chat.byokUtilityModelDefault": "mainAgent"
 }
